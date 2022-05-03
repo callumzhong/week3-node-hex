@@ -2,22 +2,24 @@ var express = require('express');
 const CustomizeError = require('../exception/customizeError');
 var router = express.Router();
 var Post = require('../models/post');
-const ErrorHandler = require('../service/errorHandler');
 const timezoneHandler = require('../service/timezoneHandler');
 
 router.get('/', async (req, res, next) => {
-	const posts = await Post.find().then((doc) => timezoneHandler.taipei(doc));
+	let posts = await Post.find();
+	posts = timezoneHandler.taipei(posts);
 	res.status('200').json(posts);
 });
 
 router.get('/:id', async (req, res, next) => {
 	try {
-		const post = await Post.findOne({ _id: req.params.id }).then((doc) =>
-			timezoneHandler.taipei(doc),
-		);
+		let post = await Post.findOne({ _id: req.params.id });
+		if (!post) {
+			throw new CustomizeError('查無此 ID 文章');
+		}
+		post = timezoneHandler.taipei(post);
 		res.status('200').json(post);
 	} catch (error) {
-		ErrorHandler({ res, error });
+		next(error);
 	}
 });
 
@@ -38,7 +40,7 @@ router.post('/', async (req, res, next) => {
 		);
 		res.status('201').json(newPost);
 	} catch (error) {
-		ErrorHandler({ res, error });
+		next(error);
 	}
 });
 
@@ -64,7 +66,7 @@ router.patch('/:id', async (req, res, next) => {
 		}).then((doc) => timezoneHandler.taipei(doc));
 		res.status('200').json(post);
 	} catch (error) {
-		ErrorHandler({ res, error });
+		next(error);
 	}
 });
 
@@ -83,7 +85,7 @@ router.delete('/:id', async (req, res, next) => {
 		const posts = await Post.find().then((doc) => timezoneHandler.taipei(doc));
 		res.status(200).json(posts);
 	} catch (error) {
-		ErrorHandler({ res, error });
+		next(error);
 	}
 });
 

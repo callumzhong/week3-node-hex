@@ -1,13 +1,14 @@
 'use strict';
 require('dotenv').config();
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var cors = require('cors');
-var indexRouter = require('./routes/index');
-var postsRouter = require('./routes/posts');
-var app = express();
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const cors = require('cors');
+const indexRouter = require('./routes/index');
+const postsRouter = require('./routes/posts');
+const ErrorHandler = require('./service/errorHandler');
+const app = express();
 
 app.use(cors());
 app.use(logger('dev'));
@@ -24,4 +25,5 @@ app.use((req, res, next) => {
 		message: '查無此網站路由',
 	});
 });
+app.use(ErrorHandler);
 module.exports = app;

@@ -1,40 +1,64 @@
 const CustomizeError = require('../exception/customizeError');
+const Log = require('../models/logs');
 
-const ErrorHandler = ({ res, error }) => {
+/**
+ * 定義參考
+ * https://zamhuang.medium.com/linux-%E5%A6%82%E4%BD%95%E5%8D%80%E5%88%86-log-level-216b975649a4
+ */
+const ErrorHandler = async (err, req, res, next) => {
 	// mongoose models require error
-	if (error.name === 'ValidationError') {
-		for (key in error.errors) {
-			error.errors[key] = error.errors[key].message;
+	if (err.name === 'ValidationError') {
+		for (key in err.errors) {
+			err.errors[key] = err.errors[key].message;
 		}
 		res.status(400).json({
 			status: 'ERROR',
-			message: error.errors,
+			message: err.errors,
 		});
-		console.log(`errors: ${JSON.stringify(error.errors)}`);
+		await Log.create({
+			type: 'INFO',
+			url: req.url,
+			method: req.method,
+			message: JSON.stringify(err.errors),
+		});
 		return;
 	}
-	if (error instanceof CustomizeError) {
+	if (err instanceof CustomizeError) {
 		res.status(400).json({
 			status: 'ERROR',
-			message: error.message,
+			message: err.message,
 		});
-		console.log(`errors: ${error.message}`);
+		await Log.create({
+			type: 'INFO',
+			url: req.url,
+			method: req.method,
+			message: err.message,
+		});
 		return;
 	}
-	if (error instanceof SyntaxError) {
+	if (err instanceof SyntaxError) {
 		res.status(400).json({
 			status: 'ERROR',
 			message: 'JSON syntax error',
 		});
-		console.log(`syntax: ${error.message}`);
+		await Log.create({
+			type: 'WARN',
+			url: req.url,
+			method: req.method,
+			message: err.message,
+		});
 		return;
 	}
 	res.status(400).json({
 		status: 'ERROR',
-		message: error.message,
+		message: err.message,
 	});
-	// heroku logs an error
-	console.log(`alert: ${error.message}`);
+	await Log.create({
+		type: 'FATAL',
+		url: req.url,
+		method: req.method,
+		message: err.message,
+	});
 };
 
 module.exports = ErrorHandler;
